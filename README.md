@@ -8,6 +8,11 @@ In this production-level DevOps project, developers push code that flows through
 
 In this setup, the application code is not directly exposed on the server. The project follows a two-repositories: one repository for application source code and another for GitOps manifests. Docker images are built in Jenkins pipelines, and the image tags are automatically updated in the GitOps repository.
 
+
+## **Manifest Repository**
+
+[GitOps Repository](https://github.com/didin8080/laravel-react-manifest.git)
+
 ## **Phase 1: Create a Custom VPC**
 
 **Step 1: Create VPC only** 
