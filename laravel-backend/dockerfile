@@ -1,0 +1,53 @@
+FROM php:8.2-fpm
+
+WORKDIR /var/www
+
+# Install PHP extensions
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    zip \
+    unzip \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libssl-dev \
+ && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip \
+ && docker-php-ext-install gd \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y nginx
+RUN rm -rf /etc/nginx/sites-enabled/*
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy Laravel code
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+# Connect database
+# RUN php artisan migrate:fresh --seed
+
+# Laravel optimizations
+RUN php artisan optimize:clear && php artisan config:clear && php artisan route:clear
+RUN php artisan key:generate || true
+
+# Fix php-fpm listen to allow external connections (important for Kubernetes)
+RUN sed -i 's|^listen = .*|listen = 0.0.0.0:9000|' /usr/local/etc/php-fpm.d/www.conf
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Permissions
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+
+EXPOSE 80
+
+CMD service nginx start && php-fpm -F

@@ -1,0 +1,27 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install bash (optional but helps)
+RUN apk add --no-cache bash
+
+COPY package.json package-lock.json ./
+
+# Install dependencies
+RUN npm cache clean --force \
+ && npm install
+
+COPY . .
+
+# Fix Vite permission issue
+RUN chmod -R 777 /app/node_modules/.bin
+RUN chmod +x /app/node_modules/@esbuild/linux-x64/bin/esbuild
+
+
+# Build Vite app (creates dist/)
+RUN npm run build
+
+EXPOSE 5000
+
+# Serve build folder on port 5000
+CMD ["npm", "run", "preview", "--", "--host", "--port", "5000"]
